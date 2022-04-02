@@ -90,9 +90,10 @@ class twsapi(EWrapper, EClient):
             i += 1            
     
     def buystocks(self):
-            print(f'Buying chosen stock(s). Time elapsed: {time.perf_counter()-time_start} seconds.')
             choice_remaining = [s for s in choice if not s in Portfolio] + [s for s in Portfolio if Portfolio[s]['Position']==0 and s in choice]
             nstocks_remaining = len(choice_remaining)
+            print(f'Buying chosen stock(s) {self.choice}. Time elapsed: {time.perf_counter()-time_start} seconds.')
+            print(f'Of these stocks, {self.choice_remaining} are not yet in the portfolio. Proceeding to buy these.')
             
             for s in choice_remaining:
                 cashamount = float(AccountInfo['CashBalance']) / nstocks_remaining
@@ -166,18 +167,18 @@ class twsapi(EWrapper, EClient):
         Portfolio[contract.symbol] = {"SecType": contract.secType, "Exchange": contract.exchange,
               "Position": position, "MarketPrice": marketPrice, "MarketValue": marketValue, "AverageCost": averageCost,
               "UnrealizedPNL": unrealizedPNL, "RealizedPNL": realizedPNL, "AccountName": accountName}
-        print(f"{contract.symbol} updated in portfolio - position is now {position}")
+        print(f"{contract.symbol} updated in portfolio - position is now {position}. Account {accountName}")
 
     def updateAccountValue(self, key: str, val: str, currency: str, accountName: str):
         global AccountInfo
         AccountInfo[key] = val
         if key == 'CashBalance':
-            print(f"Account updated - {key} is now {val}")
+            print(f"Account {accountName} updated - {key} is now {val}")
         
     def updateAccountTime(self, timeStamp: str):
         global AccountInfo
         AccountInfo["Time"] = timeStamp
-        print(f"Account updated at time {timeStamp}.")
+        #print(f"Account updated at time {timeStamp}.")
 
     def accountDownloadEnd(self, accountName: str):
         print("AccountDownloadEnd. Account:", accountName)
