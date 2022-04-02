@@ -22,40 +22,41 @@ print(f'Initial data reading ended. Time elapsed: {time.perf_counter()-time_star
 yc = yahoodata['Close']
 spotnans = yc.isna().apply(sum, axis=1)
 spotnans2 = pd.Series([list(yc.columns[yc.loc[j].isna()]) for j in yc.index], index=yc.index)
-print(f'There are {spotnans[-1]} missing values in the last period')
 
-line = -1
+
 retries = 0
-while spotnans[line] > 0:
-    print(f'Updating data. Time elapsed: {time.perf_counter()-time_start} seconds.')
-    
-    oldspotnans = spotnans2[line].copy()
-    if spotnans[line] == 1:
-        spotnans2[line].append('AAPL') #to prevent errors when only one stock is left
+for line in [-3,-2,-1]:
+    print(f'There are {spotnans[line]} missing values in period {line}')
+    while spotnans[line] > 0:
+        print(f'Updating data. Time elapsed: {time.perf_counter()-time_start} seconds.')
         
-    yd1 = yf.download(tickers=spotnans2[line], start = spotnans.index[line])
-    #check for date format mismatch
-    try:
-        yd1.index = yd1.index.date
-    except:
-        yd1.index = yahoodata.index[-yd1.shape[0]:]
+        oldspotnans = spotnans2[line].copy()
+        if spotnans[line] == 1:
+            spotnans2[line].append('AAPL') #to prevent errors when only one stock is left
+            
+        yd1 = yf.download(tickers=spotnans2[line], start = spotnans.index[line])
+        #check for date format mismatch
+        try:
+            yd1.index = yd1.index.date
+        except:
+            yd1.index = yahoodata.index[-yd1.shape[0]:]
+        
+        backup = yahoodata.loc[yd1.index, yd1.columns]  
+        yahoodata.loc[yd1.index, yd1.columns] = yd1
+        yc = yahoodata['Close']
+        spotnans = yc.isna().apply(sum, axis=1)
+        spotnans2 = pd.Series([list(yc.columns[yc.loc[j].isna()]) for j in yc.index], index=yc.index)
+        print(f'There are now {spotnans[line]} missing values in period {line}')
     
-    backup = yahoodata.loc[yd1.index, yd1.columns]  
-    yahoodata.loc[yd1.index, yd1.columns] = yd1
-    yc = yahoodata['Close']
-    spotnans = yc.isna().apply(sum, axis=1)
-    spotnans2 = pd.Series([list(yc.columns[yc.loc[j].isna()]) for j in yc.index], index=yc.index)
-    print(f'There are now {spotnans[-1]} missing values in the last period')
-
-    if spotnans2[line] != oldspotnans:   #wait a while if no new data is returned
-        pass
-    elif retries < 2:
-        print(f'No new data obtained - waiting 300 seconds. Total time elapsed: {time.perf_counter()-time_start} seconds.')
-        time.sleep(300)
-        retries += 1 
-    else:
-        print(f'No new data obtained 3 times in a row. Terminating download. Total time elapsed: {time.perf_counter()-time_start} seconds.')   
-        break
+        if spotnans2[line] != oldspotnans:   #wait a while if no new data is returned
+            pass
+        elif retries < 2:
+            print(f'No new data obtained - waiting 300 seconds. Total time elapsed: {time.perf_counter()-time_start} seconds.')
+            time.sleep(300)
+            retries += 1 
+        else:
+            print(f'No new data obtained 3 times in a row. Terminating download. Total time elapsed: {time.perf_counter()-time_start} seconds.')   
+            break
 
 
 pricepath = 'E:/Trading/Stock price data'

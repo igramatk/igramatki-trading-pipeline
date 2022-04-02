@@ -27,7 +27,7 @@ fulldata = loadsp(f'{pricepath}/downloadedhistoryclose.csv')
 # fulldata = fulldata.replace(0)
 # fulldata = fulldata.replace(0, np.nan)
 fulldata_lows = loadsp(f'{pricepath}/downloadedhistorylows.csv')
-fulldata_ind = loadsp(f'{indpath}/rsi.csv')
+fulldata_ind = loadsp(f'{indpath}/macd.csv')
 # fulldata_ind2 = loadsp(f'{indpath}/macd_signal.csv')
 # fulldata_ind3 = loadsp(f'{indpath}/macd_divergence.csv')
 
@@ -41,22 +41,22 @@ step = 1 #the step of each lag (every k periods)
 npfore = 1 #how many periods ahead to forecast
 # nma = 3 #number of moving average lags for ARIMA
 # d = 1 #level of differencing for ARIMA 
-testsize = 3538
-linesrequired = 4038
+testsize = 3600
+linesrequired = 4100
 shift = 0
 startdate = datetime(1991,1,1).date()
-enddate = fulldata.index[-1]
+enddate = fulldata.index[-1] #datetime(2022,1,11).date()
 
 #simulation parameters
 initialportfoliovalue = 1e+5
 nstocks_list = [1,2,3,4,5,10,20]
-simul_step = 5 #we change the portfolio every simul_step periods
+simul_step = 1 #we change the portfolio every simul_step periods
 fee = 0.005 #fee in dollars for buying or selling one share
 BAS = 0.0004 #bid-ask spread penalty (expressed as relative to price)
-maxloss_normal = 0.07 #maximum relative drop in stock price (daily low) before stop loss sale is triggered
-maxloss_recession = 0.01
+maxloss_normal = 0.0 #maximum relative drop in stock price (daily low) before stop loss sale is triggered
+maxloss_recession = 0.0
 SLP = 0.001 #penalty (relative to price) for trigerring stop-loss sales (will sell below the stop-loss price)
-outputname = f'test bottom RSI 7%-1% stoploss {simul_step}-day-trade'
+outputname = f'test bottom macd new 0-0% stoploss {simul_step}-day-trade'
 outputpath = 'E:/Trading/Charts'
 
 #auxiliary data

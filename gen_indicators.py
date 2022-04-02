@@ -10,7 +10,7 @@ from loadsp import loadsp
 import time
 
 ############
-time_start = time.perf_counter()
+print(f'Generating stock price indicators. Time elapsed: {time.perf_counter()-time_start} seconds.')
 
 pricepath = 'E:/Trading/Stock price data'
 indpath= 'E:/Trading/Indicators'

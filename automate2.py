@@ -33,6 +33,7 @@ class twsapi(EWrapper, EClient):
         
     def nextValidId(self, orderId):
         self.nextOrderId = orderId
+        print(f'Next valid order ID is {self.nextOrderId}')
         self.start()
         
     def start(self):       
@@ -55,6 +56,7 @@ class twsapi(EWrapper, EClient):
               stock.symbol = symbol
               stock.secType = Portfolio[symbol]['SecType']
               stock.exchange = "SMART"
+              stock.primaryExchange = "NASDAQ"
               stock.currency = AccountInfo['Currency']
            
               order = Order()
@@ -73,6 +75,7 @@ class twsapi(EWrapper, EClient):
             stock.symbol = stock_to_buy
             stock.secType = "STK"
             stock.exchange = "SMART"
+            stock.primaryExchange = "NASDAQ"
             stock.currency = "USD"
             
             order = Order()
@@ -100,33 +103,36 @@ class twsapi(EWrapper, EClient):
                 self.buystock(s)
      
     def setstoploss(self):
-        for s in choice:
-            purchaseprice = Portfolio[s]['AverageCost']
-            print(f'Purchase price of stock {s} is {purchaseprice}')
-            
-            if recession.iloc[-1].loc['in recession']: 
-                stoplossprice = round(purchaseprice * 0.99, 2)
-            else:
-                stoplossprice = round(purchaseprice * 0.93, 2)               
-            #1% stop loss if in recession, otherwise 7%
-            print('Setting up stop loss order at price ',stoplossprice)
-
-            stock = Contract()
-            stock.symbol = s
-            stock.secType = "STK"
-            stock.exchange = "SMART"
-            stock.currency = "USD"
-            
-            order = Order()
-            order.action = "SELL"
-            order.totalQuantity = Portfolio[s]['Position']
-            order.orderType = "STP"
-            order.auxPrice = stoplossprice
-            order.tif = "GTC"
-            
-            global i
-            self.placeOrder(self.nextOrderId+i, stock, order)
-            i += 1
+        print(f'Setting stop-loss orders. Time elapsed: {time.perf_counter()-time_start} seconds.')
+        for s in Portfolio:
+            if Portfolio[s]['Position']>0:
+                refprice = fulldata.iloc[-1][s] #today's price at algorithm start
+                print(f'Reference price of stock {s} is {refprice}')
+                
+                if recession.iloc[-1].loc['in recession']: 
+                    stoplossprice = round(refprice * 0.99, 2)
+                else:
+                    stoplossprice = round(refprice * 0.93, 2)               
+                #1% stop loss if in recession, otherwise 7%
+                print('Setting up stop-loss order at price ',stoplossprice)
+    
+                stock = Contract()
+                stock.symbol = s
+                stock.secType = "STK"
+                stock.exchange = "SMART"
+                stock.primaryExchange = "NASDAQ"
+                stock.currency = "USD"
+                
+                order = Order()
+                order.action = "SELL"
+                order.totalQuantity = Portfolio[s]['Position']
+                order.orderType = "STP"
+                order.auxPrice = stoplossprice
+                order.tif = "GTC"
+                
+                global i
+                self.placeOrder(self.nextOrderId+i, stock, order)
+                i += 1
             
     def stop(self):
         self.reqAccountUpdates(False, "")
@@ -144,6 +150,15 @@ class twsapi(EWrapper, EClient):
             quantity[s] = int(quantity[s] * 0.99)
             self.buystock(s)
         
+        if errorCode == 200: #stock contract is ambiguous
+            s = stock_by_orderid[reqId]
+            stock = Contract()
+            stock.symbol = s
+            stock.secType = "STK"
+            stock.exchange = "SMART"
+            stock.currency = "USD"
+            self.reqContractDetails(reqId+1, stock)
+            
       
     def updatePortfolio(self, contract: Contract, position: float, marketPrice: float, marketValue: float,
                         averageCost: float, unrealizedPNL: float, realizedPNL: float, accountName: str):
@@ -156,7 +171,8 @@ class twsapi(EWrapper, EClient):
     def updateAccountValue(self, key: str, val: str, currency: str, accountName: str):
         global AccountInfo
         AccountInfo[key] = val
-        print(f"Account updated - {key} is now {val}")
+        if key == 'CashBalance':
+            print(f"Account updated - {key} is now {val}")
         
     def updateAccountTime(self, timeStamp: str):
         global AccountInfo
@@ -176,26 +192,49 @@ class twsapi(EWrapper, EClient):
         print("ExecDetails. ", reqId, contract.symbol, contract.secType, contract.currency, execution.execId,
               execution.orderId, execution.shares, execution.lastLiquidity)
 
+    def contractDetails(self, reqId, contractDetails):
+        super().contractDetails(reqId, contractDetails)
+        global quirkycontract
+        quirkycontract = contractDetails
+
+    def contractDetailsEnd(self, reqId):
+        super().contractDetailsEnd(reqId)
+        print("ContractDetailsEnd. ReqId:", reqId)
         
-def twsapi_main():
+        
+def twsapi_main(ch, port, clientid):
     print('Starting TWS API activity')       
     tws = twsapi()
     
     print(f'Connecting to TWS API. Time elapsed: {time.perf_counter()-time_start} seconds.')
-    tws.connect('127.0.0.1', 7497, 3)  
+    tws.connect('127.0.0.1', port, clientid)  
     
+    global choice
+    choice = ch
+    global nstocks
+    nstocks = len(ch)
+            
     Timer(5, tws.selloff).start()
-    Timer(45, tws.buystocks).start()
-    Timer(85, tws.setstoploss).start()
-    Timer(90, tws.stop).start() 
+    Timer(25, tws.buystocks).start()
+    Timer(45, tws.setstoploss).start()
+    Timer(50, tws.stop).start() 
     
     print(f'Starting run thread. Time elapsed: {time.perf_counter()-time_start} seconds.')
     tws.run()
-
+    
+    
+def twsapi_test():
+    tws2 = twsapi()
+    tws2.connect('127.0.0.1', 7497, 18)
+    global quantity
+    quantity['KEYS'] = 0 
+    Timer(2, tws2.buystock, ['KEYS']).start()
+    Timer(7, tws2.setstoploss).start()
+    Timer(9, tws2.stop).start() 
+    tws2.run()
+    
 
 ############global execution code
-time_start = time.perf_counter()  
-
 tz = pytz.timezone('US/Eastern')
 while True:
     
@@ -204,21 +243,24 @@ while True:
     
     if nyt.weekday() < 5 and nyt.hour == 15 and nyt.minute == 35:      
         #begin execution
+        time_start = time.perf_counter()  
         print('Beginning execution')
         
         #check if US stock market is open by downloading financial data and checking if the last row is from the last 2 minutes
         testdata = yf.download(tickers=['AAPL'], start = nyt, interval = '1m')        
-        if testdata.index[-1] < nyt-timedelta(minutes=2):
+        if testdata.empty:
             print('The US stock market is closed. Execution aborted.')
         
         else:
             print('The US stock market is open. Proceeding')
             execfile("updatestockdata.py")
+            execfile("gen_indicators.py")
             execfile("tradingMLprod.py")    
-            nstocks = 1
-            choice = list(recommend[0].index[:nstocks]) 
-            twsapi_main()
-            #break
+            Timer(0,twsapi_main(recommend[0].index[:1], 7497, 3))
+            Timer(60,twsapi_main(macd.iloc[-1].sort_values().index[:1], 7498, 4))       
+            Timer(120,twsapi_main(recommend[0].index[:4], 7499, 5))
+            Timer(180,twsapi_main(macd.iloc[-1].sort_values().index[:4], 7495, 6))       
+            break
     
     else:
         time.sleep(30)
