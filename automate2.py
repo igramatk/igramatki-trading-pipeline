@@ -20,16 +20,11 @@ class twsapi(EWrapper, EClient):
         EWrapper.__init__(self)
         EClient.__init__(self, self)
         ###
-        global AccountInfo
-        AccountInfo = {}
-        global Portfolio
-        Portfolio = {}
-        global i #order counter - we need it to avoid duplicate order ids, because self.nextorderid does not update in time
-        i = 0
-        global quantity
-        quantity = {}
-        global stock_by_orderid
-        stock_by_orderid = {}
+        self.AccountInfo = {}
+        self.Portfolio = {}
+        self.i = 0 #order counter - we need it to avoid duplicate order ids, because self.nextorderid does not update in time
+        self.quantity = {}
+        self.stock_by_orderid = {}
         
     def nextValidId(self, orderId):
         self.nextOrderId = orderId
@@ -46,27 +41,26 @@ class twsapi(EWrapper, EClient):
     def selloff(self):    
         print(f'Closing all positions. Time elapsed: {time.perf_counter()-time_start} seconds.')
         
-        for symbol in Portfolio:
-            if symbol in choice:
+        for symbol in self.Portfolio:
+            if symbol in self.choice:
                 print(f'Ticker {symbol} is in choice. Keeping it in portfolio.')
                 
             else:
               print(f'Selling ticker {symbol} from portfolio')  
               stock = Contract()
               stock.symbol = symbol
-              stock.secType = Portfolio[symbol]['SecType']
+              stock.secType = self.Portfolio[symbol]['SecType']
               stock.exchange = "SMART"
               stock.primaryExchange = "NASDAQ"
-              stock.currency = AccountInfo['Currency']
+              stock.currency = self.AccountInfo['Currency']
            
               order = Order()
               order.action = "SELL"
-              order.totalQuantity = Portfolio[symbol]['Position']
+              order.totalQuantity = self.Portfolio[symbol]['Position']
               order.orderType = "MKT"
               
-              global i
-              self.placeOrder(self.nextOrderId+i, stock, order)
-              i += 1
+              self.placeOrder(self.nextOrderId+self.i, stock, order)
+              self.i += 1
               
     def buystock(self, stock_to_buy):
             print(f'Buying ticker {stock_to_buy}')  
@@ -80,41 +74,37 @@ class twsapi(EWrapper, EClient):
             
             order = Order()
             order.action = "BUY"
-            order.totalQuantity = quantity[stock_to_buy]
+            order.totalQuantity = self.quantity[stock_to_buy]
             order.orderType = "MKT"
             
-            global i
-            global stock_by_orderid 
-            stock_by_orderid[self.nextOrderId+i] = stock_to_buy
-            self.placeOrder(self.nextOrderId+i, stock, order)
-            i += 1            
+            self.stock_by_orderid[self.nextOrderId+self.i] = stock_to_buy
+            self.placeOrder(self.nextOrderId+self.i, stock, order)
+            self.i += 1            
     
     def buystocks(self):
-            choice_remaining = [s for s in choice if not s in Portfolio] + [s for s in Portfolio if Portfolio[s]['Position']==0 and s in choice]
-            nstocks_remaining = len(choice_remaining)
             print(f'Buying chosen stock(s) {self.choice}. Time elapsed: {time.perf_counter()-time_start} seconds.')
+            self.choice_remaining = [s for s in self.choice if not s in self.Portfolio] + [s for s in self.Portfolio if self.Portfolio[s]['Position']==0 and s in choice]
+            self.nstocks_remaining = len(self.choice_remaining)
             print(f'Of these stocks, {self.choice_remaining} are not yet in the portfolio. Proceeding to buy these.')
             
-            for s in choice_remaining:
-                cashamount = float(AccountInfo['CashBalance']) / nstocks_remaining
+            for s in self.choice_remaining:
+                cashamount = float(self.AccountInfo['CashBalance']) / self.nstocks_remaining
                 price = fulldata.iloc[-1].loc[s]
-                global quantity
-                quantity[s] = int(cashamount / price)
+                self.quantity[s] = int(cashamount / price)
             
                 self.buystock(s)
      
     def setstoploss(self):
         print(f'Setting stop-loss orders. Time elapsed: {time.perf_counter()-time_start} seconds.')
-        for s in Portfolio:
-            if Portfolio[s]['Position']>0:
+        for s in self.Portfolio:
+            if self.Portfolio[s]['Position']>0:
                 refprice = fulldata.iloc[-1][s] #today's price at algorithm start
                 print(f'Reference price of stock {s} is {refprice}')
                 
                 if recession.iloc[-1].loc['in recession']: 
-                    stoplossprice = round(refprice * 0.99, 2)
+                    stoplossprice = round(refprice * self.sl_rec, 2)
                 else:
-                    stoplossprice = round(refprice * 0.93, 2)               
-                #1% stop loss if in recession, otherwise 7%
+                    stoplossprice = round(refprice * self.sl_norm, 2)               
                 print('Setting up stop-loss order at price ',stoplossprice)
     
                 stock = Contract()
@@ -126,14 +116,13 @@ class twsapi(EWrapper, EClient):
                 
                 order = Order()
                 order.action = "SELL"
-                order.totalQuantity = Portfolio[s]['Position']
+                order.totalQuantity = self.Portfolio[s]['Position']
                 order.orderType = "STP"
                 order.auxPrice = stoplossprice
                 order.tif = "GTC"
                 
-                global i
-                self.placeOrder(self.nextOrderId+i, stock, order)
-                i += 1
+                self.placeOrder(self.nextOrderId+self.i, stock, order)
+                self.i += 1
             
     def stop(self):
         self.reqAccountUpdates(False, "")
@@ -146,13 +135,12 @@ class twsapi(EWrapper, EClient):
         print("ERROR ", reqId, errorCode, errorString)
         
         if errorCode == 201: #insufficient cash for initial margin
-            s = stock_by_orderid[reqId]
-            global quantity
-            quantity[s] = int(quantity[s] * 0.99)
+            s = self.stock_by_orderid[reqId]
+            self.quantity[s] = int(self.quantity[s] * 0.99)
             self.buystock(s)
         
         if errorCode == 200: #stock contract is ambiguous
-            s = stock_by_orderid[reqId]
+            s = self.stock_by_orderid[reqId]
             stock = Contract()
             stock.symbol = s
             stock.secType = "STK"
@@ -163,21 +151,18 @@ class twsapi(EWrapper, EClient):
       
     def updatePortfolio(self, contract: Contract, position: float, marketPrice: float, marketValue: float,
                         averageCost: float, unrealizedPNL: float, realizedPNL: float, accountName: str):
-        global Portfolio
-        Portfolio[contract.symbol] = {"SecType": contract.secType, "Exchange": contract.exchange,
+        self.Portfolio[contract.symbol] = {"SecType": contract.secType, "Exchange": contract.exchange,
               "Position": position, "MarketPrice": marketPrice, "MarketValue": marketValue, "AverageCost": averageCost,
               "UnrealizedPNL": unrealizedPNL, "RealizedPNL": realizedPNL, "AccountName": accountName}
         print(f"{contract.symbol} updated in portfolio - position is now {position}. Account {accountName}")
 
     def updateAccountValue(self, key: str, val: str, currency: str, accountName: str):
-        global AccountInfo
-        AccountInfo[key] = val
+        self.AccountInfo[key] = val
         if key == 'CashBalance':
             print(f"Account {accountName} updated - {key} is now {val}")
         
     def updateAccountTime(self, timeStamp: str):
-        global AccountInfo
-        AccountInfo["Time"] = timeStamp
+        self.AccountInfo["Time"] = timeStamp
         #print(f"Account updated at time {timeStamp}.")
 
     def accountDownloadEnd(self, accountName: str):
@@ -195,25 +180,24 @@ class twsapi(EWrapper, EClient):
 
     def contractDetails(self, reqId, contractDetails):
         super().contractDetails(reqId, contractDetails)
-        global quirkycontract
-        quirkycontract = contractDetails
+        self.quirkycontract = contractDetails
 
     def contractDetailsEnd(self, reqId):
         super().contractDetailsEnd(reqId)
         print("ContractDetailsEnd. ReqId:", reqId)
         
         
-def twsapi_main(ch, port, clientid):
+def twsapi_main(ch, port, clientid, result, sl_norm=0.93, sl_rec=0.99):
     print('Starting TWS API activity')       
     tws = twsapi()
     
     print(f'Connecting to TWS API. Time elapsed: {time.perf_counter()-time_start} seconds.')
     tws.connect('127.0.0.1', port, clientid)  
     
-    global choice
-    choice = ch
-    global nstocks
-    nstocks = len(ch)
+    tws.choice = list(ch) #choice set of stocks to buy
+    tws.nstocks = len(ch)
+    tws.sl_norm = sl_norm #stop-loss factor (% of reference price) for normal times
+    tws.sl_rec = sl_rec #stop loss factor for recessions (12-day STD of returns > 2)
             
     Timer(5, tws.selloff).start()
     Timer(25, tws.buystocks).start()
@@ -223,17 +207,19 @@ def twsapi_main(ch, port, clientid):
     print(f'Starting run thread. Time elapsed: {time.perf_counter()-time_start} seconds.')
     tws.run()
     
+    result.append(tws)
+    
     
 def twsapi_test():
     tws2 = twsapi()
     tws2.connect('127.0.0.1', 7497, 18)
-    global quantity
-    quantity['KEYS'] = 0 
+    tws2.quantity['KEYS'] = 10 
     Timer(2, tws2.buystock, ['KEYS']).start()
     Timer(7, tws2.setstoploss).start()
     Timer(9, tws2.stop).start() 
     tws2.run()
-    
+    return tws2
+
 
 ############global execution code
 tz = pytz.timezone('US/Eastern')
