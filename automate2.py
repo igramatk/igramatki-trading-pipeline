@@ -255,11 +255,12 @@ while True:
             print('The US stock market is open. Proceeding')
             execfile("updatestockdata.py")
             execfile("gen_indicators.py")
-            execfile("tradingMLprod.py")    
-            Timer(0,twsapi_main(recommend[0].index[:1], 7497, 3))
-            Timer(60,twsapi_main(macd.iloc[-1].sort_values().index[:1], 7498, 4))       
-            Timer(120,twsapi_main(recommend[0].index[:4], 7499, 5))
-            Timer(180,twsapi_main(macd.iloc[-1].sort_values().index[:4], 7495, 6))       
+            execfile("tradingMLprod.py")
+            algs = []
+            Timer(0, twsapi_main, [recommend[0].index[:1], 7497, 3, algs]).start()
+            Timer(1, twsapi_main, [macd.iloc[-1].sort_values().index[:1], 7498, 4, algs]).start()       
+            Timer(2, twsapi_main, [recommend[0].index[:4], 7499, 5, algs]).start()
+            Timer(3, twsapi_main, [macd.iloc[-1].sort_values().index[:4], 7495, 6, algs]).start()   
             break
     
     else:
