@@ -200,9 +200,9 @@ def twsapi_main(ch, port, clientid, result, sl_norm=0.93, sl_rec=0.99):
     tws.sl_rec = sl_rec #stop loss factor for recessions (12-day STD of returns > 2)
             
     Timer(5, tws.selloff).start()
-    Timer(25, tws.buystocks).start()
-    Timer(45, tws.setstoploss).start()
-    Timer(50, tws.stop).start() 
+    Timer(35, tws.buystocks).start()
+    Timer(65, tws.setstoploss).start()
+    Timer(70, tws.stop).start() 
     
     print(f'Starting run thread. Time elapsed: {time.perf_counter()-time_start} seconds.')
     tws.run()
