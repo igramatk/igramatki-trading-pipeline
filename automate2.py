@@ -83,7 +83,7 @@ class twsapi(EWrapper, EClient):
     
     def buystocks(self):
             print(f'Buying chosen stock(s) {self.choice}. Time elapsed: {time.perf_counter()-time_start} seconds.')
-            self.choice_remaining = [s for s in self.choice if not s in self.Portfolio] + [s for s in self.Portfolio if self.Portfolio[s]['Position']==0 and s in choice]
+            self.choice_remaining = [s for s in self.choice if not s in self.Portfolio] + [s for s in self.Portfolio if self.Portfolio[s]['Position']==0 and s in self.choice]
             self.nstocks_remaining = len(self.choice_remaining)
             print(f'Of these stocks, {self.choice_remaining} are not yet in the portfolio. Proceeding to buy these.')
             
