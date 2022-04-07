@@ -169,14 +169,17 @@ class twsapi(EWrapper, EClient):
         print("AccountDownloadEnd. Account:", accountName)
       
     def orderStatus(self, orderId , status, filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld, mktCapPrice):
-        print("OrderStatus. Id: ", orderId, ", Status: ", status, ", Filled: ", filled, ", Remaining: ", remaining, ", LastFillPrice: ", lastFillPrice)
+        pass
+        #print("OrderStatus. Id: ", orderId, ", Status: ", status, ", Filled: ", filled, ", Remaining: ", remaining, ", LastFillPrice: ", lastFillPrice)
         
     def openOrder(self, orderId, contract, order, orderState):
-        print("OpenOrder. ID:", orderId, contract.symbol, contract.secType, "@", contract.exchange, ":", order.action, order.orderType, order.totalQuantity, orderState.status)
+        pass
+        #print("OpenOrder. ID:", orderId, contract.symbol, contract.secType, "@", contract.exchange, ":", order.action, order.orderType, order.totalQuantity, orderState.status)
 
     def execDetails(self, reqId, contract, execution):
-        print("ExecDetails. ", reqId, contract.symbol, contract.secType, contract.currency, execution.execId,
-              execution.orderId, execution.shares, execution.lastLiquidity)
+        pass
+        #print("ExecDetails. ", reqId, contract.symbol, contract.secType, contract.currency, execution.execId,
+        #      execution.orderId, execution.shares, execution.lastLiquidity)
 
     def contractDetails(self, reqId, contractDetails):
         super().contractDetails(reqId, contractDetails)
