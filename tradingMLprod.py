@@ -35,7 +35,8 @@ returns = pd.DataFrame(index = [f't+{npfore-j+1}' for j in range(1,npfore+per)],
 for s in data:
     #s = 'AAPL'
     i+=1
-    print(f'Building model for stock {s} (number {i}). Time elapsed: {time.perf_counter()-time_start} seconds.')
+    if i % 100 == 1:
+        print(f'Building model for stock {s} (number {i}). Time elapsed: {time.perf_counter()-time_start} seconds.')
     y = data[s]
     
     x = pd.concat([data[[s]].shift(i*step+npfore).add_prefix(f't-{i*step+npfore} ') 
