@@ -53,10 +53,10 @@ nstocks_list = [1,2,3,4,5,10,20]
 simul_step = 1 #we change the portfolio every simul_step periods
 fee = 0.005 #fee in dollars for buying or selling one share
 BAS = 0.0004 #bid-ask spread penalty (expressed as relative to price)
-maxloss_normal = 0.0 #maximum relative drop in stock price (daily low) before stop loss sale is triggered
-maxloss_recession = 0.0
+maxloss_normal = 0.99 #maximum relative drop in stock price (daily low) before stop loss sale is triggered
+maxloss_recession = 0.01
 SLP = 0.001 #penalty (relative to price) for trigerring stop-loss sales (will sell below the stop-loss price)
-outputname = f'test bottom macd new 0-0% stoploss {simul_step}-day-trade'
+outputname = f'test bottom macd newest recession any 1.5 none-1% stoploss {simul_step}-day-trade'
 outputpath = 'E:/Trading/Charts'
 
 #auxiliary data
@@ -66,7 +66,7 @@ recession = pd.DataFrame(fulldata_returns['^GSPC'])
 for k in [5,8,12,20]:
     recession[f'{k}-day mean'] = recession['^GSPC'].rolling(k).mean()
     recession[f'{k}-day std'] = recession['^GSPC'].rolling(k).std()  
-recession['in recession'] = recession['12-day std'] >= 2
+recession['in recession'] = (recession['12-day std'] >= 1.5) | (recession['20-day std'] >= 1.5) | (recession['8-day std'] >= 1.5) | (recession['5-day std'] >= 1.5)
 
 ################training the model    
 indiceslist = ['^GSPC','XLC','XLY','XLP','XLE','XLF','XLV','XLI','XLB','XLRE','XLK','XLU']
