@@ -255,8 +255,9 @@ while True:
             Timer(1, twsapi_main, [choice_bmacd.index[:2], 7498, 4, algs, 0.99, 0.99]).start()       
             Timer(2, twsapi_main, [choice_bmacd.index[:2], 7499, 5, algs, 0.97, 0.97]).start()
             Timer(3, twsapi_main, [choice_bmacd.index[:2], 7495, 6, algs, 0.93, 0.93]).start()   
-            Timer(4, twsapi_main, [choice_bmacd.index[:2], 7494, 7, algs, 0.1, 0.1]).start()   
-            break
-    
+            Timer(4, twsapi_main, [choice_bmacd.index[:2], 7494, 7, algs, 0.5, 0.5]).start()   
+            
+        break
+
     else:
         time.sleep(10)
