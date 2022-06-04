@@ -276,7 +276,8 @@ for nstocks in nstocks_list:
     plt.plot(list(simresults.index), simresults['portfolio value'], label=f'{nstocks} stocks', linewidth=0.5)
 
     #add summary statistics (mean, std, min, max etc.) on top of paths file
-    summary = simresults.describe().append(simresults.select_dtypes('number').iloc[-1].rename('last'))   
+    summary = pd.concat([simresults.describe(), simresults.select_dtypes('number').iloc[-1:]], axis=0)
+    summary.index.values[-1] = 'last'
     simresults = pd.concat([summary, simresults])
     
     print(f'Writing {nstocks} stocks path to CSV. Time elapsed: {time.perf_counter()-time_start} seconds.')
@@ -284,7 +285,7 @@ for nstocks in nstocks_list:
 
     #stack summaries in preparation for final summary file
     summary = summary.assign(n_stocks=f'{nstocks} stocks').loc[:,['n_stocks']+list(summary.columns)]
-    ssum = ssum.append(summary)
+    ssum = pd.concat([ssum, summary])
     
     
 #make the summary sheet more concise
