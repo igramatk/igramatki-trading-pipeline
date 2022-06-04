@@ -225,6 +225,7 @@ def twsapi_test():
 
 
 ############global execution code
+time_start = time.perf_counter()  #prevent code from breaking when running standalone subroutines 
 tz = pytz.timezone('US/Eastern')
 while True:
     
