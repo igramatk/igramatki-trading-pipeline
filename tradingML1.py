@@ -11,11 +11,7 @@ import numpy as np
 import time
 from datetime import datetime
 import os
-from sklearn.linear_model import LinearRegression
-from sklearn.linear_model import Ridge
-from sklearn.neural_network import MLPRegressor
-from sklearn.model_selection import train_test_split
-from statsmodels.tsa.arima.model import ARIMA
+
 
 ############
 time_start = time.perf_counter()
@@ -36,15 +32,7 @@ print(f'Data loading from CSV ended. Time elapsed: {time.perf_counter()-time_sta
 firstappear = pd.Series([fulldata[s].first_valid_index() for s in fulldata], index = fulldata.columns)
 
 ###########setup model parameters
-nlags = 12 #number of AR lags
-step = 1 #the step of each lag (every k periods)
-npfore = 1 #how many periods ahead to forecast
-# nma = 3 #number of moving average lags for ARIMA
-# d = 1 #level of differencing for ARIMA 
-testsize = 3600
-linesrequired = 4100
-shift = 0
-startdate = datetime(1991,1,1).date()
+startdate = datetime(2022,4,11).date()
 enddate = fulldata.index[-1] #datetime(2022,1,11).date()
 
 #simulation parameters
@@ -59,125 +47,21 @@ outputname = 'test bottom macd vary stoploss'
 outputpath = 'E:/Trading/Charts'
 
 #auxiliary data
-fulldata_returns = (100 * (fulldata / fulldata.shift(npfore) - 1))
-#fulldata_daily_returns = (100 * (fulldata / fulldata.shift(1) - 1))
+fulldata_returns = (100 * (fulldata / fulldata.shift(1) - 1))
 recession = pd.DataFrame(fulldata_returns['^GSPC'])
 for k in [5,8,12,20]:
     recession[f'{k}-day mean'] = recession['^GSPC'].rolling(k).mean()
     recession[f'{k}-day std'] = recession['^GSPC'].rolling(k).std()  
 recession['in recession'] = (recession['12-day std'] >= 1.5) | (recession['20-day std'] >= 1.5) | (recession['8-day std'] >= 1.5) | (recession['5-day std'] >= 1.5)
 
-################training the model    
-indiceslist = ['^GSPC','XLC','XLY','XLP','XLE','XLF','XLV','XLI','XLB','XLRE','XLK','XLU']
-valid_stocks = fulldata.drop(indiceslist, axis=1).loc[:,fulldata.count() > linesrequired].columns
-data = fulldata_returns.loc[startdate:enddate, fulldata.count() > linesrequired]
-# data_ind = fulldata_ind.loc[data.index, data.columns]
-# data_ind2 = fulldata_ind2.loc[data.index, data.columns]
-# data_ind3 = fulldata_ind3.loc[data.index, data.columns]
-valid_indices = [i for i in indiceslist if i in data.columns]
-returns_raw=pd.DataFrame(index = data.index)
-psum=[]
-predictions=[]
-i=0
-
-for s in valid_stocks:
- #   try:
-        #s = 'AAPL'
-        i+=1
-        print(f'Building model for stock {s} (number {i}). Time elapsed: {time.perf_counter()-time_start} seconds.')
-        y = data[s]
-        
-        # #pull financial data
-        # f = pd.read_csv(f'E:/Trading/Financial data/{s}.csv', index_col=0)
-        # f1 = f.replace('[,%]', '', regex=True).apply(pd.to_numeric)
-        # #calculate key financial metrics
-        # fd = pd.DataFrame(100 * f1.loc['Net Income'] / f1.loc['Total Assets'], columns=['ROA'])
-        # fd['ROE'] = 100 * f1.loc['Net Income'] / f1.loc['Total Stockholders Equity']
-        # fd['EPS'] = f1.loc['EPS']
-        # fd['OCFPS'] = f1.loc['Cash Provided by Operating Activities'] / f1.loc['Weighted Average Shares Outstanding']
-        # #expand index to prepare for joining
-        # fd.index = [datetime.strptime(u, "%Y-%m-%d").date() for u in fd.index]
-        # fd = fd.reindex(index = pd.date_range(datetime(1985,1,1), datetime.now())).ffill().loc[data.index]
-        # fd.index = [u.date() for u in fd.index]
-        # fd['inverse PE'] = 100 * fd['EPS'] / fulldata[s]
-        # fd['% OCFPS'] = 100 * fd['OCFPS'] / fulldata[s]
-        
-        x = pd.concat([data[[s]].shift(i*step+npfore).add_prefix(f't-{i*step+npfore} ') 
-                        for i in range(nlags)] #+
-                      #[fd[['inverse PE']].shift(npfore).add_prefix(f't-{npfore} ')]
-                      #[data_ind[[s]].shift(i*step+npfore).add_prefix(f'IND1 t-{i*step+npfore} ') 
-                      # for i in range(1)] +
-                      # [data_ind2[[s]].shift(i*step+npfore).add_prefix(f'IND2 t-{i*step+npfore} ') 
-                      #  for i in range(1)] +
-                      #[data_ind3[[s]].shift(i*step+npfore).add_prefix(f'IND3 t-{i*step+npfore} ') 
-                      #  for i in range(1)]
-                        , axis=1)
-        x = x.dropna()
-        y = y.loc[x.index]
-        
-        xtrain, xtest, ytrain, ytest = train_test_split(x, y, test_size=testsize, shuffle=False)
-        
-        lr = LinearRegression()
-        lr.fit(xtrain,ytrain)
-        
-        ytest = y
-        xtest = x
-        ypred = pd.Series(lr.predict(xtest), index=ytest.index, name='prediction')
-
-        # #for time series models from statsmodels
-        # y = y.dropna()
-        # yindex = y.index
-        # y = y.reset_index(drop=True)
-        # ytrain = y[:-testsize]
-        # ytest = y[-testsize:]
-        
-        # lr = ARIMA(ytrain, order=(nlags,d,nma))
-        # model_fit = lr.fit()
-        # model_ypred = model_fit.append(ytest)
-        # ypred = pd.Series(model_ypred.predict(ytest.index[0], ytest.index[-1]), index=ytest.index, name='prediction')
-           
-        ###model performance metrics
-        ycomp = pd.concat([ytest, ypred], axis=1)
-        #ycomp.index = data[-testsize:].index
-        ycomp['error'] = ycomp['prediction'] - ycomp[s]
-        # ycomp['actual price change'] = ycomp[s] - y.shift(npfore).loc[ytest.index]
-        # ycomp['predicted price change'] = ycomp['prediction'] - y.shift(npfore).loc[ytest.index]
-        # ycomp['actual return'] = 100 * ycomp['actual price change'] / y.shift(npfore).loc[ytest.index]
-        # ycomp['predicted return'] = 100 * ycomp['predicted price change'] / y.shift(npfore).loc[ytest.index]
-        # ycomp['return error'] = ycomp['predicted return'] - ycomp['actual return']
-        # rmse = np.sqrt((ycomp['error'] ** 2).mean())
-        # returnmeanerror = ycomp['return error'].mean()
-        # returnrmse = np.sqrt((ycomp['return error'] ** 2).mean())
-        
-        ycomp['guessed direction'] = (np.sign(ycomp['prediction']) == np.sign(ycomp[s])).astype(int)
-        ycomp['overstated return'] = (ycomp['prediction'] > ycomp[s]).astype(int)
-        # guessdir = 100 * ycomp['guessed direction'].mean()
-        # overstate = 100 * ycomp['overstated return'].mean()
-        psum.append(ycomp.describe())
-        predictions.append(ycomp)
-        
-        #final model output
-        returns_raw = pd.concat([returns_raw, ycomp['prediction'].rename(s)], axis=1)
-        
-    # except:
-    #     print(f'Building model for stock {s} failed. Time elapsed: {time.perf_counter()-time_start} seconds.')
-
-    
-returns_toshift = returns_raw.iloc[-testsize-shift:]
-returns = returns_toshift.shift(shift).dropna()
-
-rsum = returns.describe()
-print(f'Model training ended. Time elapsed: {time.perf_counter()-time_start} seconds.')
-
-
 
 ############trading simulation
-data = fulldata.loc[returns.index, fulldata.columns]
-data_lows = fulldata_lows.loc[returns.index, fulldata.columns]
+data = fulldata.loc[startdate:enddate, fulldata.columns]
+data_lows = fulldata_lows.loc[startdate:enddate, fulldata.columns]
 data['cash'] = 1
 data_lows['cash'] = 1
 
-tradeperiods = returns.index[:-1:simul_step]
+tradeperiods = data.index[:-1:simul_step]
 returns_sorted = pd.Series([fulldata_ind.loc[c].sort_values(ascending=True) for c in tradeperiods], index = tradeperiods)
 ssum = pd.DataFrame()
 
@@ -191,7 +75,7 @@ for maxloss in maxloss_list:
     #nstocks = 3
     print(f'Simulating trading stradegy for {maxloss} stoploss. Time elapsed: {time.perf_counter()-time_start} seconds.')
     
-    simresults = pd.DataFrame('', index=returns.index, columns=[
+    simresults = pd.DataFrame('', index=data.index, columns=[
         'beginning holdings','expected return','portfolio value','final holdings','fees'])
     simresults[['portfolio value','fees']] = 0.00
     
