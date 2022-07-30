@@ -49,14 +49,13 @@ enddate = fulldata.index[-1] #datetime(2022,1,11).date()
 
 #simulation parameters
 initialportfoliovalue = 1e+5
-nstocks_list = [1,2,3,4,5,10,20]
+nstocks = 2
 simul_step = 1 #we change the portfolio every simul_step periods
 fee = 0.005 #fee in dollars for buying or selling one share
 BAS = 0.0004 #bid-ask spread penalty (expressed as relative to price)
-maxloss_normal = 0.99 #maximum relative drop in stock price (daily low) before stop loss sale is triggered
-maxloss_recession = 0.01
+maxloss_list = [0.002, 0.01, 0.03, 0.07, 0.5]
 SLP = 0.001 #penalty (relative to price) for trigerring stop-loss sales (will sell below the stop-loss price)
-outputname = f'test bottom macd newest recession any 1.5 none-1% stoploss {simul_step}-day-trade'
+outputname = 'test bottom macd vary stoploss'
 outputpath = 'E:/Trading/Charts'
 
 #auxiliary data
@@ -188,9 +187,9 @@ try:
 except:
     pass
 
-for nstocks in nstocks_list:
+for maxloss in maxloss_list:
     #nstocks = 3
-    print(f'Simulating trading stradegy for top {nstocks} stocks. Time elapsed: {time.perf_counter()-time_start} seconds.')
+    print(f'Simulating trading stradegy for {maxloss} stoploss. Time elapsed: {time.perf_counter()-time_start} seconds.')
     
     simresults = pd.DataFrame('', index=returns.index, columns=[
         'beginning holdings','expected return','portfolio value','final holdings','fees'])
@@ -232,7 +231,7 @@ for nstocks in nstocks_list:
             choices = returns_sorted.at[t].iloc[:nstocks]
             #choices = returns.loc[t].sample(n=nstocks)
             choiceprices = data.loc[t, choices.index]
-            maxloss = maxloss_recession if recession.loc[t,'in recession'] else maxloss_normal
+    #        maxloss = maxloss_recession if recession.loc[t,'in recession'] else maxloss_normal
             stoplossprices = choiceprices * (1-maxloss)
             simresults.at[t,'final holdings'] = simresults.at[t, 'portfolio value'] * (1-BAS) / nstocks / choiceprices
             simresults.at[t,'expected return'] = choices.round(2) #this will be shifted down to the next trade period later
@@ -273,24 +272,24 @@ for nstocks in nstocks_list:
     simresults['drawdown duration'] = simresults['in drawdown'].groupby((simresults['in drawdown'] != simresults['in drawdown'].shift()).cumsum()).transform('size') * simresults['in drawdown']
 
     print(f'Plotting. Time elapsed: {time.perf_counter()-time_start} seconds.')
-    plt.plot(list(simresults.index), simresults['portfolio value'], label=f'{nstocks} stocks', linewidth=0.5)
+    plt.plot(list(simresults.index), simresults['portfolio value'], label=f'{maxloss} stoploss', linewidth=0.5)
 
     #add summary statistics (mean, std, min, max etc.) on top of paths file
     summary = pd.concat([simresults.describe(), simresults.select_dtypes('number').iloc[-1:]], axis=0)
     summary.index.values[-1] = 'last'
     simresults = pd.concat([summary, simresults])
     
-    print(f'Writing {nstocks} stocks path to CSV. Time elapsed: {time.perf_counter()-time_start} seconds.')
-    simresults.to_csv(f'{outputpath}/{outputname}/{outputname} {nstocks} stocks path.csv')
+    print(f'Writing {maxloss} stoploss path to CSV. Time elapsed: {time.perf_counter()-time_start} seconds.')
+    simresults.to_csv(f'{outputpath}/{outputname}/{outputname} {maxloss} stoploss path.csv')
 
     #stack summaries in preparation for final summary file
-    summary = summary.assign(n_stocks=f'{nstocks} stocks').loc[:,['n_stocks']+list(summary.columns)]
+    summary = summary.assign(stoploss=f'{maxloss} stoploss').loc[:,['stoploss']+list(summary.columns)]
     ssum = pd.concat([ssum, summary])
     
     
 #make the summary sheet more concise
 elems = []
-elems.append(ssum.loc['count','n_stocks'])
+elems.append(ssum.loc['count','stoploss'])
 elems.append(ssum.loc['last',['return to date','annualised return to date','cumulative fees']])
 elems.append(ssum.loc['max',['drawdown', 'drawdown %', 'drawdown duration']].rename(columns=lambda x: 'max '+x))
 elems.append(ssum.loc['std',['1-day return','5-day return','21-day return','252-day return']].rename(columns=lambda x: x.replace('return','std')))
@@ -298,7 +297,7 @@ elems.append(ssum.loc['mean',['1-day return', '1-day profitable', '5-day return'
                             '21-day return', '21-day profitable', '252-day return','252-day profitable',
                             'drawdown', 'drawdown %', 'in drawdown', 'drawdown duration']])
 elems = [e.reset_index(drop=True) for e in elems]
-ssum_short = pd.concat(elems, axis=1).set_index('n_stocks')
+ssum_short = pd.concat(elems, axis=1).set_index('stoploss')
 ssum_short.to_csv(f'{outputpath}/{outputname}/{outputname} summary.csv')
 
 plt.xticks(rotation=25)
