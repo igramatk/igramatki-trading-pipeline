@@ -1,6 +1,8 @@
 include "$GDRIVEJUMP/Stata functions/functionsall.do"
 
-foreach f in retar_top_1 retar_top_4 bottom_macd_1 bottom_macd_4 discret_hold_5 {
+// retar_top_1 retar_top_4 bottom_macd_1 bottom_macd_4 discret_hold_5 - first wave of testing
+// 0.2%_stop_loss 1%_stop_loss 3%_stop_loss 7%_stop_loss 50%_stop_loss - second wave of testing
+foreach f in  {
 	global folder `f'
 
 	import delimited "E:\Trading\Log/$folder\Stock_holdings_day_by_day.csv", bindquote(strict) varnames(1) clear
@@ -47,9 +49,12 @@ foreach f in retar_top_1 retar_top_4 bottom_macd_1 bottom_macd_4 discret_hold_5 
 	destring reportdate , replace
 
 	***
-	foreach d in 20220202 20220314 { //20220202 - remove activity before current algorithm run in the first paper trading account
+	//20220202 - remove activity before current algorithm run in the first paper trading account
+	//20220314 - common period when all paper trading accounts were active
+	//20220411 - start of stop loss testing
+	foreach d in 20220411 { 
 		preserve
-		drop if reportdate < `d' //20220314 - common period when all paper trading accounts were active
+		drop if reportdate < `d' 
 
 		replace total = round(total, 0.01)
 		replace fee = 0 if missing(fee)
