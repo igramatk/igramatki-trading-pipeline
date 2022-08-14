@@ -232,7 +232,7 @@ while True:
     nyt = datetime.now(tz)
     print (f'Time in New York is {nyt}')
     
-    if nyt.weekday() < 5 and nyt.hour == 15 and nyt.minute == 42:      
+    if nyt.weekday() < 5 and nyt.hour == 10 and nyt.minute == 15:      
         #begin execution
         time_start = time.perf_counter()  
         print('Beginning execution')
