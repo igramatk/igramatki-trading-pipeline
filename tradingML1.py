@@ -23,6 +23,7 @@ fulldata = loadsp(f'{pricepath}/downloadedhistoryclose.csv')
 # fulldata = fulldata.replace(0)
 # fulldata = fulldata.replace(0, np.nan)
 fulldata_lows = loadsp(f'{pricepath}/downloadedhistorylows.csv')
+fulldata_open = loadsp(f'{pricepath}/downloadedhistoryopen.csv')
 fulldata_ind = loadsp(f'{indpath}/macd.csv')
 # fulldata_ind2 = loadsp(f'{indpath}/macd_signal.csv')
 # fulldata_ind3 = loadsp(f'{indpath}/macd_divergence.csv')
@@ -58,8 +59,10 @@ recession['in recession'] = (recession['12-day std'] >= 1.5) | (recession['20-da
 ############trading simulation
 data = fulldata.loc[startdate:enddate, fulldata.columns]
 data_lows = fulldata_lows.loc[startdate:enddate, fulldata.columns]
+data_open = fulldata_open.loc[startdate:enddate, fulldata.columns]
 data['cash'] = 1
 data_lows['cash'] = 1
+data_open['cash'] = 1
 
 tradeperiods = data.index[:-1:simul_step]
 returns_sorted = pd.Series([fulldata_ind.loc[c].sort_values(ascending=True) for c in tradeperiods], index = tradeperiods)
@@ -91,13 +94,15 @@ for maxloss in maxloss_list:
             
             # #check whether stop-loss was triggered
             keyprices_lows = data_lows.loc[t, simresults.at[t, 'beginning holdings'].index]
+            keyprices_open = data_open.loc[t, simresults.at[t, 'beginning holdings'].index]
             to_sell = list(keyprices_lows.lt(stoplossprices).index[keyprices_lows.lt(stoplossprices)])
+            sellprices = stoplossprices.combine(keyprices_open, min) * (1-SLP)
             #we reflect the sale in beginning holdings rather than final holdings so as not to be masked up by the next trade
             if len(to_sell)>0:
                 if 'cash' in simresults.at[t, 'beginning holdings']:
-                    simresults.at[t, 'beginning holdings'].loc['cash'] += (simresults.at[t, 'beginning holdings'].loc[to_sell] * stoplossprices.loc[to_sell]).sum() * (1-SLP)
+                    simresults.at[t, 'beginning holdings'].loc['cash'] += (simresults.at[t, 'beginning holdings'].loc[to_sell] * sellprices.loc[to_sell]).sum() 
                 else:
-                    simresults.at[t, 'beginning holdings'].loc['cash'] = (simresults.at[t, 'beginning holdings'].loc[to_sell] * stoplossprices.loc[to_sell]).sum() * (1-SLP)                    
+                    simresults.at[t, 'beginning holdings'].loc['cash'] = (simresults.at[t, 'beginning holdings'].loc[to_sell] * sellprices.loc[to_sell]).sum()                   
                 simresults.at[t, 'fees'] += fee * np.maximum(simresults.at[t, 'beginning holdings'].loc[to_sell], 200).sum() 
                 simresults.at[t, 'beginning holdings'].loc['cash'] -= simresults.at[t, 'fees']
                 simresults.at[t, 'beginning holdings'].drop(to_sell, inplace=True)
