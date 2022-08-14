@@ -32,8 +32,8 @@ print(f'Data loading from CSV ended. Time elapsed: {time.perf_counter()-time_sta
 firstappear = pd.Series([fulldata[s].first_valid_index() for s in fulldata], index = fulldata.columns)
 
 ###########setup model parameters
-startdate = datetime(2022,4,11).date()
-enddate = fulldata.index[-1] #datetime(2022,1,11).date()
+startdate = datetime(2008,1,2).date()
+enddate =  fulldata.index[-1] #datetime(2019,12,31).date() #
 
 #simulation parameters
 initialportfoliovalue = 1e+5
