@@ -44,7 +44,7 @@ fee = 0.005 #fee in dollars for buying or selling one share
 BAS = 0.0004 #bid-ask spread penalty (expressed as relative to price)
 maxloss_list = [0.002, 0.01, 0.03, 0.07, 0.5]
 SLP = 0.001 #penalty (relative to price) for trigerring stop-loss sales (will sell below the stop-loss price)
-outputname = 'test bottom macd vary stoploss'
+outputname = 'bMACD by_stoploss_adj 2008-now SLP0.001 2stocks'
 outputpath = 'E:/Trading/Charts'
 
 #auxiliary data
@@ -79,7 +79,7 @@ for maxloss in maxloss_list:
     print(f'Simulating trading stradegy for {maxloss} stoploss. Time elapsed: {time.perf_counter()-time_start} seconds.')
     
     simresults = pd.DataFrame('', index=data.index, columns=[
-        'beginning holdings','expected return','portfolio value','final holdings','fees'])
+        'beginning holdings','MACD','portfolio value','final holdings','fees'])
     simresults[['portfolio value','fees']] = 0.00
     
     for t in simresults.index:
@@ -120,14 +120,14 @@ for maxloss in maxloss_list:
             choices = returns_sorted.at[t].iloc[:nstocks]
             #choices = returns.loc[t].sample(n=nstocks)
             choiceprices = data.loc[t, choices.index]
-    #        maxloss = maxloss_recession if recession.loc[t,'in recession'] else maxloss_normal
+            #maxloss = maxloss_recession if recession.loc[t,'in recession'] else maxloss_normal
             stoplossprices = choiceprices * (1-maxloss)
             simresults.at[t,'final holdings'] = simresults.at[t, 'portfolio value'] * (1-BAS) / nstocks / choiceprices
-            simresults.at[t,'expected return'] = choices.round(2) #this will be shifted down to the next trade period later
+            simresults.at[t,'MACD'] = choices.round(2) #this will be shifted down to the next trade period later
             simresults.at[t,'fees'] += fee * np.maximum(simresults.at[t,'final holdings'].sub(simresults.at[t, 'beginning holdings'], fill_value=0).drop('cash', errors='ignore'), 200).sum()
             simresults.at[t,'portfolio value'] -= simresults.at[t,'fees']
             #make sure that we do not forget to apply the fees before we carry over the holdings into the next period
-            #since we spent all our cash, we pay the fee with the stock with the worst predicted returns in our portfolio
+            #since we spent all our cash, we pay the fee with the last stock in our portfolio
             simresults.at[t,'final holdings'].iat[-1] -= simresults.at[t,'fees'] / choiceprices.iat[-1]
             
         else:
@@ -142,7 +142,7 @@ for maxloss in maxloss_list:
     #tidy up the holdings columns - keep just the stock names
     simresults.loc[:,'beginning holdings'] = simresults.loc[:,'beginning holdings'].apply(lambda x: list(x.index))
     simresults.loc[:,'final holdings'] = simresults.loc[:,'final holdings'].apply(lambda x: list(x.index))
-    simresults.loc[:,'expected return'] = simresults.loc[:,'expected return'].apply(list).shift(simul_step)
+    #simresults.loc[:,'expected return'] = simresults.loc[:,'expected return'].apply(list).shift(simul_step)
         
     #simulation performance metrics
     for timeunit in [1,5,21,252]:
