@@ -2,7 +2,7 @@ include "$GDRIVEJUMP/Stata functions/functionsall.do"
 
 // retar_top_1 retar_top_4 bottom_macd_1 bottom_macd_4 discret_hold_5 - first wave of testing
 // 0.2%_stop_loss 1%_stop_loss 3%_stop_loss 7%_stop_loss 50%_stop_loss - second wave of testing
-foreach f in  {
+foreach f in 0.2%_stop_loss 1%_stop_loss 3%_stop_loss 7%_stop_loss 50%_stop_loss {
 	global folder `f'
 
 	import delimited "E:\Trading\Log/$folder\Stock_holdings_day_by_day.csv", bindquote(strict) varnames(1) clear
