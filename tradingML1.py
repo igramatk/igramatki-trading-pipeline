@@ -111,8 +111,9 @@ for maxloss in maxloss_list:
             simresults.at[t, 'portfolio value'] = (simresults.at[t, 'beginning holdings'] * data.loc[t, simresults.at[t, 'beginning holdings'].index]).sum()
                
         if t == simresults.index[-1]: #dispose of portfolio
-            simresults.at[t, 'fees'] += fee * np.maximum(simresults.at[t, 'beginning holdings'].drop('cash', errors='ignore'), 200).sum()
-            simresults.at[t,'portfolio value'] -= simresults.at[t,'fees']
+            newfee = fee * np.maximum(simresults.at[t, 'beginning holdings'].drop('cash', errors='ignore'), 200).sum()
+            simresults.at[t, 'fees'] += newfee
+            simresults.at[t,'portfolio value'] -= newfee
             simresults.at[t, 'final holdings'] = pd.Series([simresults.at[t, 'portfolio value']], index=['cash'])
        
         elif t in tradeperiods: 
@@ -124,11 +125,12 @@ for maxloss in maxloss_list:
             stoplossprices = choiceprices * (1-maxloss)
             simresults.at[t,'final holdings'] = simresults.at[t, 'portfolio value'] * (1-BAS) / nstocks / choiceprices
             simresults.at[t,'MACD'] = choices.round(2) #this will be shifted down to the next trade period later
-            simresults.at[t,'fees'] += fee * np.maximum(simresults.at[t,'final holdings'].sub(simresults.at[t, 'beginning holdings'], fill_value=0).drop('cash', errors='ignore'), 200).sum()
-            simresults.at[t,'portfolio value'] -= simresults.at[t,'fees']
+            newfee = fee * np.maximum(simresults.at[t,'final holdings'].sub(simresults.at[t, 'beginning holdings'], fill_value=0).drop('cash', errors='ignore').abs(), 200).sum()
+            simresults.at[t,'fees'] += newfee
+            simresults.at[t,'portfolio value'] -= newfee
             #make sure that we do not forget to apply the fees before we carry over the holdings into the next period
             #since we spent all our cash, we pay the fee with the last stock in our portfolio
-            simresults.at[t,'final holdings'].iat[-1] -= simresults.at[t,'fees'] / choiceprices.iat[-1]
+            simresults.at[t,'final holdings'].iat[-1] -= newfee / choiceprices.iat[-1]
             
         else:
             #beginning holdings are maintained and become final holdings
