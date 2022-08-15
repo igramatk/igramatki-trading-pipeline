@@ -75,7 +75,6 @@ except:
     pass
 
 for maxloss in maxloss_list:
-    #nstocks = 3
     print(f'Simulating trading stradegy for {maxloss} stoploss. Time elapsed: {time.perf_counter()-time_start} seconds.')
     
     simresults = pd.DataFrame('', index=data.index, columns=[
@@ -117,11 +116,9 @@ for maxloss in maxloss_list:
             simresults.at[t, 'final holdings'] = pd.Series([simresults.at[t, 'portfolio value']], index=['cash'])
        
         elif t in tradeperiods: 
-            #trade - choose the n stocks with the best predicted return
+            #choose the n stocks to trade (with the lowest MACD)
             choices = returns_sorted.at[t].iloc[:nstocks]
-            #choices = returns.loc[t].sample(n=nstocks)
             choiceprices = data.loc[t, choices.index]
-            #maxloss = maxloss_recession if recession.loc[t,'in recession'] else maxloss_normal
             stoplossprices = choiceprices * (1-maxloss)
             simresults.at[t,'final holdings'] = simresults.at[t, 'portfolio value'] * (1-BAS) / nstocks / choiceprices
             simresults.at[t,'MACD'] = choices.round(2) #this will be shifted down to the next trade period later
