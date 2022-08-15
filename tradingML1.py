@@ -44,7 +44,7 @@ fee = 0.005 #fee in dollars for buying or selling one share
 BAS = 0.0004 #bid-ask spread penalty (expressed as relative to price)
 maxloss_list = [0, 0.002, 0.01, 0.03, 0.07, 0.5]
 SLP = 0.001 #penalty (relative to price) for trigerring stop-loss sales (will sell below the stop-loss price)
-outputname = 'bMACD by_stoploss_adj 2008-now SLP0.001 2stocks'
+outputname = 'bMACD by_stoploss_adj trade_at_open 2008-now SLP0.001 2stocks'
 outputpath = 'E:/Trading/Charts'
 
 #auxiliary data
@@ -87,53 +87,63 @@ for maxloss in maxloss_list:
         if t == simresults.index[0]: #initialization
             simresults.at[t, 'portfolio value'] = initialportfoliovalue
             simresults.at[t, 'beginning holdings'] = pd.Series([initialportfoliovalue], index=['cash'])
+            stoplossprices = pd.Series([0], index=['cash'])
+            
+        elif t in tradeperiods: #trading at market open
+            #choose the n stocks to trade
+            choices = returns_sorted.shift(1).at[t].iloc[:nstocks]
+            #choices = returns.loc[t].sample(n=nstocks)
+            choiceprices = data_open.loc[t, choices.index]
+            #maxloss = maxloss_recession if recession.loc[t,'in recession'] else maxloss_normal
+            stoplossprices = choiceprices * (1-maxloss)
+            simresults.at[t,'portfolio value'] = (simresults.shift(1).at[t,'final holdings'] * data_open.loc[t, simresults.shift(1).at[t,'final holdings'].index]).sum()
+            simresults.at[t,'beginning holdings'] = simresults.at[t, 'portfolio value'] * (1-BAS) / nstocks / choiceprices
+            simresults.at[t,'MACD'] = choices.round(2) #this will be shifted down to the next trade period later
+            newfee = fee * np.maximum(simresults.at[t,'beginning holdings'].sub(simresults.shift(1).at[t,'final holdings'], fill_value=0).drop('cash', errors='ignore'), 200).sum()
+            simresults.at[t,'fees'] += newfee
+            simresults.at[t,'portfolio value'] -= newfee
+            #make sure that we do not forget to apply the fees before we carry over the holdings into the next period
+            #since we spent all our cash, we pay the fee with the last stock in our portfolio
+            simresults.at[t,'beginning holdings'].iat[-1] -= newfee / choiceprices.iat[-1]
             
         else:
             #carry over portfolio from end of previous day
             simresults.at[t, 'beginning holdings'] = simresults.shift(1).at[t,'final holdings'].copy()
             
-            # #check whether stop-loss was triggered
-            keyprices_lows = data_lows.loc[t, simresults.at[t, 'beginning holdings'].index]
-            keyprices_open = data_open.loc[t, simresults.at[t, 'beginning holdings'].index]
-            to_sell = list(keyprices_lows.lt(stoplossprices).index[keyprices_lows.lt(stoplossprices)])
-            sellprices = stoplossprices.combine(keyprices_open, min) * (1-SLP)
-            #we reflect the sale in beginning holdings rather than final holdings so as not to be masked up by the next trade
-            if len(to_sell)>0:
-                if 'cash' in simresults.at[t, 'beginning holdings']:
-                    simresults.at[t, 'beginning holdings'].loc['cash'] += (simresults.at[t, 'beginning holdings'].loc[to_sell] * sellprices.loc[to_sell]).sum() 
-                else:
-                    simresults.at[t, 'beginning holdings'].loc['cash'] = (simresults.at[t, 'beginning holdings'].loc[to_sell] * sellprices.loc[to_sell]).sum()                   
-                simresults.at[t, 'fees'] += fee * np.maximum(simresults.at[t, 'beginning holdings'].loc[to_sell], 200).sum() 
-                simresults.at[t, 'beginning holdings'].loc['cash'] -= simresults.at[t, 'fees']
-                simresults.at[t, 'beginning holdings'].drop(to_sell, inplace=True)
-            
-            #evaluate portflio with this day's prices
-            simresults.at[t, 'portfolio value'] = (simresults.at[t, 'beginning holdings'] * data.loc[t, simresults.at[t, 'beginning holdings'].index]).sum()
+        ####passage of time during the day
+        #beginning holdings are maintained and become final holdings
+        simresults.at[t,'final holdings'] = simresults.at[t, 'beginning holdings'].copy()
+
+        # #check whether stop-loss was triggered
+        keyprices_lows = data_lows.loc[t, simresults.at[t, 'beginning holdings'].index]
+        keyprices_open_next = data_open.shift(-1).loc[t, simresults.at[t, 'beginning holdings'].index]
+        to_sell_today = set(keyprices_lows.lt(stoplossprices).index[keyprices_lows.lt(stoplossprices)])
+        to_sell_tmrw = set(keyprices_open_next.lt(stoplossprices).index[keyprices_open_next.lt(stoplossprices)])
+        to_sell = to_sell_today | to_sell_tmrw
+        to_sell_tmrw = list(to_sell - to_sell_today)
+        to_sell = list(to_sell)
+        sellprices = stoplossprices * (1-SLP)
+        sellprices.loc[to_sell_tmrw] = keyprices_open_next * (1-SLP)
+    
+        if len(to_sell)>0:
+            if 'cash' in simresults.at[t, 'final holdings']:
+                simresults.at[t, 'final holdings'].loc['cash'] += (simresults.at[t, 'final holdings'].loc[to_sell] * sellprices.loc[to_sell]).sum() 
+            else:
+                simresults.at[t, 'final holdings'].loc['cash'] = (simresults.at[t, 'final holdings'].loc[to_sell] * sellprices.loc[to_sell]).sum()                   
+            newfee = fee * np.maximum(simresults.at[t, 'final holdings'].loc[to_sell], 200).sum() 
+            simresults.at[t, 'fees'] += newfee
+            simresults.at[t, 'final holdings'].loc['cash'] -= newfee
+            simresults.at[t, 'final holdings'].drop(to_sell, inplace=True)
+        
+        #evaluate portflio at end of day's prices
+        simresults.at[t, 'portfolio value'] = (simresults.at[t, 'final holdings'] * data.loc[t, simresults.at[t, 'final holdings'].index]).sum()
                
         if t == simresults.index[-1]: #dispose of portfolio
-            simresults.at[t, 'fees'] += fee * np.maximum(simresults.at[t, 'beginning holdings'].drop('cash', errors='ignore'), 200).sum()
-            simresults.at[t,'portfolio value'] -= simresults.at[t,'fees']
+            newfee = fee * np.maximum(simresults.at[t, 'final holdings'].drop('cash', errors='ignore'), 200).sum()
+            simresults.at[t, 'fees'] += newfee
+            simresults.at[t,'portfolio value'] -= newfee
             simresults.at[t, 'final holdings'] = pd.Series([simresults.at[t, 'portfolio value']], index=['cash'])
-       
-        elif t in tradeperiods: 
-            #trade - choose the n stocks with the best predicted return
-            choices = returns_sorted.at[t].iloc[:nstocks]
-            #choices = returns.loc[t].sample(n=nstocks)
-            choiceprices = data.loc[t, choices.index]
-            #maxloss = maxloss_recession if recession.loc[t,'in recession'] else maxloss_normal
-            stoplossprices = choiceprices * (1-maxloss)
-            simresults.at[t,'final holdings'] = simresults.at[t, 'portfolio value'] * (1-BAS) / nstocks / choiceprices
-            simresults.at[t,'MACD'] = choices.round(2) #this will be shifted down to the next trade period later
-            simresults.at[t,'fees'] += fee * np.maximum(simresults.at[t,'final holdings'].sub(simresults.at[t, 'beginning holdings'], fill_value=0).drop('cash', errors='ignore'), 200).sum()
-            simresults.at[t,'portfolio value'] -= simresults.at[t,'fees']
-            #make sure that we do not forget to apply the fees before we carry over the holdings into the next period
-            #since we spent all our cash, we pay the fee with the last stock in our portfolio
-            simresults.at[t,'final holdings'].iat[-1] -= simresults.at[t,'fees'] / choiceprices.iat[-1]
-            
-        else:
-            #beginning holdings are maintained and become final holdings
-            simresults.at[t,'final holdings'] = simresults.at[t, 'beginning holdings'].copy()
-        
+             
         if simresults.at[t,'portfolio value'] < 0:
             simresults = simresults.loc[:t]
             break #we're bankrupt. Stop the path so as not to go down into negative numbers where a lot of ratios (e.g. returns) lose meaning
