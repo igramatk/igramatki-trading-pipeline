@@ -152,7 +152,7 @@ for maxloss in maxloss_list:
     #tidy up the holdings columns - keep just the stock names
     simresults.loc[:,'beginning holdings'] = simresults.loc[:,'beginning holdings'].apply(lambda x: list(x.index))
     simresults.loc[:,'final holdings'] = simresults.loc[:,'final holdings'].apply(lambda x: list(x.index))
-    #simresults.loc[:,'expected return'] = simresults.loc[:,'expected return'].apply(list).shift(simul_step)
+    simresults.loc[:,'MACD'] = simresults.loc[:,'MACD'].apply(list)
         
     #simulation performance metrics
     for timeunit in [1,5,21,252]:
