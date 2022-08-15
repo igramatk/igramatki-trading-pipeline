@@ -137,6 +137,7 @@ for maxloss in maxloss_list:
         if simresults.at[t,'portfolio value'] < 0:
             simresults = simresults.loc[:t]
             break #we're bankrupt. Stop the path so as not to go down into negative numbers where a lot of ratios (e.g. returns) lose meaning
+
             
     simresults['cumulative fees'] = simresults['fees'].cumsum()   
     #tidy up the holdings columns - keep just the stock names
