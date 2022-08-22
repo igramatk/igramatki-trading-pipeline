@@ -8,6 +8,9 @@ from datetime import datetime, timedelta
 import pytz
 import time
 from threading import Timer
+import sys
+sys.path.append('E:\TWS API\source\pythonclient')
+sys.path.append('E:\Trading\Code')
 from ibapi.order import Order
 from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
