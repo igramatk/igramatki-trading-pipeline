@@ -79,7 +79,11 @@ class twsapi(EWrapper, EClient):
             order.action = "BUY"
             order.totalQuantity = self.quantity[stock_to_buy]
             order.orderType = "MKT"
-            
+            # limitprice = round(fulldata.iloc[-1].loc[stock_to_buy] * 1.005, 2)
+            # order.LmtPrice = limitprice
+            # order.minTick = 0.00005
+            # print(f'Buying {order.totalQuantity} shares of ticker {stock_to_buy} at limit price {limitprice}') 
+                    
             self.stock_by_orderid[self.nextOrderId+self.i] = stock_to_buy
             self.placeOrder(self.nextOrderId+self.i, stock, order)
             self.i += 1            
