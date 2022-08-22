@@ -16,7 +16,11 @@ indiceslist = ['^GSPC','XLC','XLY','XLP','XLE','XLF','XLV','XLI','XLB','XLRE','X
 tickerslist = tickers_sp500() + indiceslist
 
 yahoodata = yf.download(tickers=tickerslist, start = '1986-01-01')
-yahoodata.index = yahoodata.index.date
+try:
+    yahoodata.index = yahoodata.index.date
+except:
+    yahoodata.index = [s.date() for s in yahoodata.index]
+    yahoodata = yahoodata.sort_index()
 print(f'Initial data reading ended. Time elapsed: {time.perf_counter()-time_start} seconds.')
 
 yc = yahoodata['Close']
