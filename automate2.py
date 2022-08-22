@@ -260,6 +260,7 @@ while True:
             Timer(2, twsapi_main, [choice_bmacd.index[:2], 7499, 5, algs, 0.97, 0.97]).start()
             Timer(3, twsapi_main, [choice_bmacd.index[:2], 7495, 6, algs, 0.93, 0.93]).start()   
             Timer(4, twsapi_main, [choice_bmacd.index[:2], 7494, 7, algs, 0.5, 0.5]).start()   
+            Timer(5, twsapi_main, [choice_bmacd.index[:2], 7496, 8, algs, 0.85, 0.85]).start()   
             
         break
 
