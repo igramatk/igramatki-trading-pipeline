@@ -1,5 +1,17 @@
 include "$GDRIVEJUMP/Stata functions/functionsall.do"
 
+***prepare S&P500 return data
+/*
+import delimited "E:\Trading\Stock price data\downloadedhistoryclose.csv", bindquote(strict) clear 
+
+keep v1 gspc
+rename v1 reportdate
+replace reportdate = subinstr(reportdate,"-","",.) 
+destring reportdate , replace
+
+save "E:\Trading\Stock price data\sp500.dta" , replace
+*/
+
 // retar_top_1 retar_top_4 bottom_macd_1 bottom_macd_4 discret_hold_5 - first wave of testing
 // 0.2%_stop_loss 1%_stop_loss 3%_stop_loss 7%_stop_loss 50%_stop_loss - second wave of testing
 foreach f in 0.2%_stop_loss 1%_stop_loss 3%_stop_loss 7%_stop_loss 50%_stop_loss {
@@ -55,16 +67,21 @@ foreach f in 0.2%_stop_loss 1%_stop_loss 3%_stop_loss 7%_stop_loss 50%_stop_loss
 	foreach d in 20220411 { 
 		preserve
 		drop if reportdate < `d' 
+		
+		merge 1:1 reportdate using "E:\Trading\Stock price data\sp500.dta" , nogen keep(match)
 
 		replace total = round(total, 0.01)
 		replace fee = 0 if missing(fee)
 
 		gen double cumfee = sum(fee)
 		gen double return1day = (total / total[_n-1] - 1) * 100
+		gen double ret1daySP500 = (gspc / gspc[_n-1] - 1) * 100
 		gen double prof1day = return1day > 0 if !missing(return1day) & return1day!=0
 		gen double return5day = (total / total[_n-5] - 1) * 100
+		gen double ret5daySP500 = (gspc / gspc[_n-5] - 1) * 100
 		gen double prof5day = return5day > 0 if !missing(return5day) & return5day!=0
 		gen double returntodate = (total / total[1] - 1) * 100
+		gen double retodateSP500 = (gspc / gspc[1] - 1) * 100
 		gen double cummax = total in 1
 		replace cummax = max(cummax[_n-1],total) if missing(cummax)
 		gen double drawdown = cummax - total
