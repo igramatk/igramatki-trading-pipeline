@@ -253,9 +253,12 @@ while True:
             print('The US stock market is open. Proceeding')
             execfile("updatestockdata.py")
             execfile("gen_indicators.py")
-            execfile("tradingMLprod.py")
+            try:
+                execfile("tradingMLprod.py")
+                choice_retar = recommend[0]
+            except:
+                print('Error in training AR algorithm!')
             
-            choice_retar = recommend[0]
             choice_bmacd = macd.iloc[-1].sort_values()
             algs = []
             
