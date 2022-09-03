@@ -255,7 +255,7 @@ while True:
             print('The US stock market is open. Proceeding')
             execfile("updatestockdata.py")
             execfile("gen_indicators.py")
-            execfile("tradingMLprod.py")    
+            execfile("MLpredict_returns.py")
             Timer(0,twsapi_main(recommend[0].index[:1], 7497, 3))
             Timer(60,twsapi_main(macd.iloc[-1].sort_values().index[:1], 7498, 4))       
             Timer(120,twsapi_main(recommend[0].index[:4], 7499, 5))
