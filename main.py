@@ -254,7 +254,7 @@ while True:
             execfile("updatestockdata.py")
             execfile("gen_indicators.py")
             try:
-                execfile("tradingMLprod.py")
+                execfile("MLpredict_returns.py")
                 choice_retar = recommend[0]
             except:
                 print('Error in training AR algorithm!')
