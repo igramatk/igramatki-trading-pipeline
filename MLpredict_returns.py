@@ -18,6 +18,7 @@ print(f'Data loading from CSV ended. Time elapsed: {time.perf_counter()-time_sta
 
 #auxiliary data
 fulldata_returns = (100 * (fulldata / fulldata.shift(npfore) - 1))
+actual_returns_sorted = pd.Series([fulldata_returns.iloc[-i-1].sort_values(ascending=False) for i in range(50)], index=fulldata.index[:-51:-1])
 
 print(f'Calculating recession indicators. Time elapsed: {time.perf_counter()-time_start} seconds.')
 recession = pd.DataFrame(fulldata_returns['^GSPC'])
