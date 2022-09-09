@@ -16,6 +16,13 @@ from loadsp import loadsp
 fulldata = loadsp('E:/Trading/Stock price data/downloadedhistoryclose.csv')
 print(f'Data loading from CSV ended. Time elapsed: {time.perf_counter()-time_start} seconds.')
 
+print(f'Calculating recession indicators. Time elapsed: {time.perf_counter()-time_start} seconds.')
+recession = pd.DataFrame(fulldata_returns['^GSPC'])
+for k in [5,8,12,20]:
+    recession[f'{k}-day mean'] = recession['^GSPC'].rolling(k).mean()
+    recession[f'{k}-day std'] = recession['^GSPC'].rolling(k).std()  
+recession['in recession'] = recession['12-day std'] >= 2
+
 nlags = 12
 step = 1
 npfore = 1
@@ -55,12 +62,5 @@ for s in data:
     returns.loc[:,s] = lr.predict(x_to_predict)
 
 recommend = pd.Series([i[1].sort_values(ascending=False) for i in returns.iterrows()], index = returns.index)
-
-print(f'Calculating recession indicators. Time elapsed: {time.perf_counter()-time_start} seconds.')
-recession = pd.DataFrame(fulldata_returns['^GSPC'])
-for k in [5,8,12,20]:
-    recession[f'{k}-day mean'] = recession['^GSPC'].rolling(k).mean()
-    recession[f'{k}-day std'] = recession['^GSPC'].rolling(k).std()  
-recession['in recession'] = recession['12-day std'] >= 2
 
 print(f'Program ended. Time elapsed: {time.perf_counter()-time_start} seconds.')
