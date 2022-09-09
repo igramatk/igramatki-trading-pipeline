@@ -108,7 +108,7 @@ class twsapi(EWrapper, EClient):
                 refprice = fulldata.iloc[-1][s] #today's price at algorithm start
                 print(f'Reference price of stock {s} is {refprice}')
                 
-                if recession.iloc[-1].loc['in recession']: 
+                if 'recession' in globals() and recession.iloc[-1].loc['in recession']: 
                     stoplossprice = round(refprice * self.sl_rec, 2)
                 else:
                     stoplossprice = round(refprice * self.sl_norm, 2)               
