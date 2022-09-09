@@ -16,6 +16,9 @@ from loadsp import loadsp
 fulldata = loadsp('E:/Trading/Stock price data/downloadedhistoryclose.csv')
 print(f'Data loading from CSV ended. Time elapsed: {time.perf_counter()-time_start} seconds.')
 
+#auxiliary data
+fulldata_returns = (100 * (fulldata / fulldata.shift(npfore) - 1))
+
 print(f'Calculating recession indicators. Time elapsed: {time.perf_counter()-time_start} seconds.')
 recession = pd.DataFrame(fulldata_returns['^GSPC'])
 for k in [5,8,12,20]:
@@ -23,14 +26,13 @@ for k in [5,8,12,20]:
     recession[f'{k}-day std'] = recession['^GSPC'].rolling(k).std()  
 recession['in recession'] = recession['12-day std'] >= 2
 
+
 nlags = 12
 step = 1
 npfore = 1
 startdate = datetime(1991,1,1).date()
 linesrequired = 100
 per = 5 #number of periods to show in the recommend variable, descending from t+1
-
-fulldata_returns = (100 * (fulldata / fulldata.shift(npfore) - 1))
 
 indiceslist = ['^GSPC','XLC','XLY','XLP','XLE','XLF','XLV','XLI','XLB','XLRE','XLK','XLU']
 data = fulldata_returns.loc[startdate:, (fulldata.count() > linesrequired) & ~(fulldata.iloc[-1].isna())].drop(indiceslist, axis=1)
