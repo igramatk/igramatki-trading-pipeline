@@ -54,12 +54,12 @@ for line in [-3,-2,-1]:
     
         if spotnans2[line] != oldspotnans:   #wait a while if no new data is returned
             pass
-        elif retries < 2:
+        elif retries < 2 and line == -1:
             print(f'No new data obtained - waiting 300 seconds. Total time elapsed: {time.perf_counter()-time_start} seconds.')
             time.sleep(300)
             retries += 1 
         else:
-            print(f'No new data obtained 3 times in a row. Terminating download. Total time elapsed: {time.perf_counter()-time_start} seconds.')   
+            print(f'No new data obtained. Terminating download. Total time elapsed: {time.perf_counter()-time_start} seconds.')   
             break
 
 
