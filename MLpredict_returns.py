@@ -38,7 +38,7 @@ for k in [5,8,12,20]:
 recession['in recession'] = recession['12-day std'] >= 2
 
 
-indiceslist = ['^GSPC','XLC','XLY','XLP','XLE','XLF','XLV','XLI','XLB','XLRE','XLK','XLU']
+indiceslist = ['^GSPC']
 data = fulldata_returns.loc[startdate:, (fulldata.count() > linesrequired) & ~(fulldata.iloc[-1].isna())].drop(indiceslist, axis=1)
 returns=pd.DataFrame()
 i=0

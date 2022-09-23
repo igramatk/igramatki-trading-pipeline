@@ -12,8 +12,8 @@ import time
 #time_start = time.perf_counter()
 
 #sp500 = pd.read_excel('E:/Trading/S&P500.xlsx')
-indiceslist = ['^GSPC','XLC','XLY','XLP','XLE','XLF','XLV','XLI','XLB','XLRE','XLK','XLU']
-tickerslist = tickers_sp500() + indiceslist
+#indiceslist = ['^GSPC','XLC','XLY','XLP','XLE','XLF','XLV','XLI','XLB','XLRE','XLK','XLU']
+tickerslist = tickers_sp500() + ['^GSPC']
 
 yahoodata = yf.download(tickers=tickerslist, start = '1986-01-01')
 try:
