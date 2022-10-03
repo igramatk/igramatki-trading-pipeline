@@ -45,6 +45,7 @@ choice_bmacd_returns_ranking_summary = choice_bmacd_returns_ranking.loc[
 choice_bmacd_returns_cumrank_summary = choice_bmacd_returns_cumrank.loc[
     :startdate].describe()
 
+w = choice_bmacd.shape[0] #number of stocks
 
 fulldata_logreturns_tmrw = (100*np.log(1 + fulldata_returns.shift(-1)/100)).round(2)
 choice_bmacd_returns = pd.DataFrame([list(fulldata_logreturns_tmrw.
@@ -52,10 +53,10 @@ choice_bmacd_returns = pd.DataFrame([list(fulldata_logreturns_tmrw.
                         for day in fulldata_returns.index[:-1]],
                                     index = fulldata.index[1:],
                                      columns = [f'{j+1}th stock' 
-                                                for j in range(504)]).iloc[::-1]
+                                                for j in range(w)]).iloc[::-1]
 
-choice_bmacd_returns_cum = (choice_bmacd_returns.cumsum(axis=1) / range(1,505)).round(2)
-choice_bmacd_returns_cum.columns = [f'top {j} stocks' for j in range(1,505)]
+choice_bmacd_returns_cum = (choice_bmacd_returns.cumsum(axis=1) / range(1,w+1)).round(2)
+choice_bmacd_returns_cum.columns = [f'top {j} stocks' for j in range(1,w+1)]
 
 choice_bmacd_returns_summary = choice_bmacd_returns.loc[
     :startdate].describe()
