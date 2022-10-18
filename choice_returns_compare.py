@@ -39,11 +39,12 @@ choice_bmacd_returns_cumrank.columns = [f'top {j} stocks' for j in range(1,11)]
 
 
 startdate = datetime(2015, 1, 1).date()
+enddate = datetime.now().date()
                                           
 choice_bmacd_returns_ranking_summary = choice_bmacd_returns_ranking.loc[
-    :startdate].describe()
+    enddate:startdate].describe()
 choice_bmacd_returns_cumrank_summary = choice_bmacd_returns_cumrank.loc[
-    :startdate].describe()
+    enddate:startdate].describe()
 
 w = choice_bmacd.shape[0] #number of stocks
 
@@ -59,9 +60,9 @@ choice_bmacd_returns_cum = (choice_bmacd_returns.cumsum(axis=1) / range(1,w+1)).
 choice_bmacd_returns_cum.columns = [f'top {j} stocks' for j in range(1,w+1)]
 
 choice_bmacd_returns_summary = choice_bmacd_returns.loc[
-    :startdate].describe()
+    enddate:startdate].describe()
 choice_bmacd_returns_cum_summary = choice_bmacd_returns_cum.loc[
-    :startdate].describe()
+    enddate:startdate].describe()
 
 fulldata_logreturns_tmrw.loc[startdate:].describe().loc['mean'].describe()
 fulldata_logreturns_tmrw.loc[startdate:].describe().loc['50%'].describe()
