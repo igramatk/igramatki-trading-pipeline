@@ -33,12 +33,12 @@ print(f'Data loading from CSV ended. Time elapsed: {time.perf_counter()-time_sta
 firstappear = pd.Series([fulldata[s].first_valid_index() for s in fulldata], index = fulldata.columns)
 
 ###########setup model parameters
-startdate = datetime(2008,1,2).date()
+startdate = datetime(2008,1,1).date()
 enddate =  fulldata.index[-1] #datetime(2019,12,31).date() #
 
 #simulation parameters
 initialportfoliovalue = 1e+5
-nstocks = 2
+nstocks = 3
 #nstocks_list = [1,2,3,4,5,7,10]
 simul_step = 1 #we change the portfolio every simul_step periods
 fee = 0.005 #fee in dollars for buying or selling one share
@@ -46,7 +46,7 @@ BAS = 0.0004 #bid-ask spread penalty (expressed as relative to price)
 #maxloss = 0.15
 maxloss_list = [0, 0.002, 0.005, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.1, 0.15, 0.2, 0.3, 0.5]
 SLP = 0.001 #penalty (relative to price) for trigerring stop-loss sales (will sell below the stop-loss price)
-outputname = 'bMACD by_stoploss_adj_more 2008-now SLP0.001 2 stocks'
+outputname = 'bMACD by_stoploss_adj_more 2008-now SLP0.001 3 stocks'
 outputpath = 'E:/Trading/Charts'
 
 #auxiliary data
