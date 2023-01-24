@@ -38,7 +38,7 @@ choice_bmacd_returns_cumrank = choice_bmacd_returns_ranking.cumsum(axis=1) / ran
 choice_bmacd_returns_cumrank.columns = [f'top {j} stocks' for j in range(1,11)]
 
 
-startdate = datetime(2015, 1, 1).date()
+startdate = datetime(2018, 1, 1).date()
 enddate = datetime.now().date()
                                           
 choice_bmacd_returns_ranking_summary = choice_bmacd_returns_ranking.loc[
