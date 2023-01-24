@@ -14,20 +14,26 @@ save "E:\Trading\Stock price data\sp500.dta" , replace
 
 // retar_top_1 retar_top_4 bottom_macd_1 bottom_macd_4 discret_hold_5 - first wave of testing
 // 0.2%_stop_loss 1%_stop_loss 3%_stop_loss 7%_stop_loss 50%_stop_loss - second wave of testing
-foreach f in 0.2%_stop_loss 1%_stop_loss 3%_stop_loss 7%_stop_loss 50%_stop_loss {
+foreach f in /*0.2%_stop_loss 1%_stop_loss 3%_stop_loss 7%_stop_loss 50%_stop_loss*/ LIVE_ACCOUNT {
 	global folder `f'
-
+	tempfile f0 f1 f2 f3
+	
 	import delimited "E:\Trading\Log/$folder\Stock_holdings_day_by_day.csv", bindquote(strict) varnames(1) clear
+	save `f0' , replace
+	cap import delimited "E:\Trading\Log/$folder\Stock_holdings_day_by_day (1).csv", bindquote(strict) varnames(1) clear
+	if _rc==0 append using `f0'
 	drop if symbol == "Symbol"
 	destring quan - fifo ,  replace
 	rename symbol position
 	rename quantity sharesheld
 	bys reportdate : gen j = _n
 	reshape wide position sharesheld markprice openprice fifopnl, i(reportdate) j(j)
-	tempfile f1
 	save `f1' , replace
 
 	import delimited "E:\Trading\Log/$folder\list_trades.csv", bindquote(strict) varnames(1) clear
+	save `f0' , replace
+	cap import delimited "E:\Trading\Log/$folder\list_trades (1).csv", bindquote(strict) varnames(1) clear
+	if _rc==0 append using `f0'
 	gen reportdate = substr(datetime,1,8)
 	gen time = substr(datetime,10,6)
 	drop datetime
@@ -38,7 +44,6 @@ foreach f in 0.2%_stop_loss 1%_stop_loss 3%_stop_loss 7%_stop_loss 50%_stop_loss
 	*****total daily fees
 	preserve
 	collapse (sum) fee , by(reportdate)
-	tempfile f2
 	save `f2' , replace
 
 	****list of trades
@@ -47,10 +52,12 @@ foreach f in 0.2%_stop_loss 1%_stop_loss 3%_stop_loss 7%_stop_loss 50%_stop_loss
 	drop if symbol == "IBKR"
 	by reportdate : gen j = _n
 	reshape wide time symbol quantity price , i(reportdate) j(j)
-	tempfile f3
 	save `f3' , replace
 
 	import delimited "E:\Trading\Log/$folder\NAV_day_by_day.csv", bindquote(strict) varnames(1) clear
+	save `f0' , replace
+	cap import delimited "E:\Trading\Log/$folder\NAV_day_by_day (1).csv", bindquote(strict) varnames(1) clear
+	if _rc==0 append using `f0'
 	drop if total == "Total"
 	drop if total == "0" | total == "1000000"
 	destring total , replace
@@ -64,7 +71,10 @@ foreach f in 0.2%_stop_loss 1%_stop_loss 3%_stop_loss 7%_stop_loss 50%_stop_loss
 	//20220202 - remove activity before current algorithm run in the first paper trading account
 	//20220314 - common period when all paper trading accounts were active
 	//20220411 - start of stop loss testing
-	foreach d in 20220411 { 
+	//20220816 - start of live account
+	//20221205 - extra $4K investment in live account
+	//20220102 - change of stop loss calibration parameters
+	foreach d in 20221205 { 
 		preserve
 		drop if reportdate < `d' 
 		
