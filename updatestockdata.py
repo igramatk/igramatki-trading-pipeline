@@ -54,7 +54,7 @@ for line in [-3,-2,-1]:
     
         if spotnans2[line] != oldspotnans:   #wait a while if no new data is returned
             pass
-        elif retries < 2 and line == -1 and spotnans[line] > 1:
+        elif retries < 1 and line == -1 and spotnans[line] > 1:
             print(f'No new data obtained - waiting 300 seconds. Total time elapsed: {time.perf_counter()-time_start} seconds.')
             for i in range(30):
                 time.sleep(10)
