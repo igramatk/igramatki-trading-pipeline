@@ -262,12 +262,12 @@ while True:
             choice_bmacd = macd.iloc[-1].sort_values()
             algs = []
             
-            Timer(0, twsapi_main, [choice_bmacd.index[:2], 7497, 3, algs, 0.998, 0.998]).start()
-            Timer(1, twsapi_main, [choice_bmacd.index[:2], 7498, 4, algs, 0.99, 0.99]).start()       
-            Timer(2, twsapi_main, [choice_bmacd.index[:2], 7499, 5, algs, 0.97, 0.97]).start()
-            Timer(3, twsapi_main, [choice_bmacd.index[:2], 7495, 6, algs, 0.93, 0.93]).start()   
-            Timer(4, twsapi_main, [choice_bmacd.index[:2], 7494, 7, algs, 0.5, 0.5]).start()   
-            Timer(5, twsapi_main, [choice_bmacd.index[:3], 7496, 8, algs, 0.85, 0.85]).start()   
+            Timer(0, twsapi_main, [choice_bmacd.index[:3], 7497, 3, algs, 0.98, 0.98]).start()
+            Timer(1, twsapi_main, [choice_bmacd.index[:3], 7498, 4, algs, 0.97, 0.97]).start()       
+            Timer(2, twsapi_main, [choice_bmacd.index[:3], 7499, 5, algs, 0.95, 0.95]).start()
+            Timer(3, twsapi_main, [choice_bmacd.index[:3], 7495, 6, algs, 0.93, 0.93]).start()   
+            Timer(4, twsapi_main, [choice_bmacd.index[:3], 7494, 7, algs, 0.91, 0.91]).start()   
+            Timer(5, twsapi_main, [choice_bmacd.index[:3], 7496, 8, algs, 0.9, 0.9]).start()   
             
         break
 
